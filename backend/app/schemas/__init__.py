@@ -1,10 +1,15 @@
 from backend.app.schemas.user import (
-    UserBase,
+    UserBase, 
     UserBirthdayUpdate,
     BirthdayRemaining,
     UserResponse
 )
 from backend.app.schemas.web_app import WebAppInitData, WebAppUser
+from backend.app.schemas.share import (
+    ShareLinkCreate,
+    ShareLinkResponse,
+    SharedUserResponse
+)
 
 __all__ = [
     "UserBase",
@@ -12,5 +17,8 @@ __all__ = [
     "BirthdayRemaining",
     "UserResponse",
     "WebAppInitData",
-    "WebAppUser"
+    "WebAppUser",
+    "ShareLinkCreate",
+    "ShareLinkResponse",
+    "SharedUserResponse"
 ]

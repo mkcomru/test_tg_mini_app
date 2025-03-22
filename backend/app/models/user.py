@@ -7,7 +7,7 @@ class User(models.Model):
     first_name = fields.CharField(max_length=255)
     last_name = fields.CharField(max_length=255)
     username = fields.CharField(max_length=255)
-    birthday = fields.DateField()
+    birthday = fields.DateField(null=True)
 
     class Meta:
         table = "users"

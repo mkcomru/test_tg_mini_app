@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+tortoise-orm
+asyncpg
+aiogram
+python-dotenv
+pydantic-settings

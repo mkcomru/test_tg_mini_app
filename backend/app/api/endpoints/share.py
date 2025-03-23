@@ -37,3 +37,34 @@ async def create_share_link(
         expires_at=share_link.expires_at,
         share_url=share_url
     )
+
+@router.get("/{share_code}", response_model=SharedUserResponse)
+async def get_shared_user_data(share_code: str) -> SharedUserResponse:
+    share_link = await ShareLink.filter(share_code=share_code).first().prefetch_related("user")
+    if not share_link:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ссылка не найдена"
+        )
+    
+    is_expired = False
+    if share_link.expires_at and share_link.expires_at < datetime.now():
+        is_expired = True
+    
+    user = share_link.user
+    
+    user_response = UserResponse(
+        telegram_id=user.telegram_id,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        username=user.username,
+        birthday=user.birthday
+    )
+    
+    if user.birthday:
+        user_response.birthday_remaining = calculate_time_to_birthday(user.birthday)
+    
+    return SharedUserResponse(
+        user=user_response,
+        is_expired=is_expired
+    )

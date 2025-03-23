@@ -94,6 +94,8 @@ export const useUserStore = defineStore('user', () => {
                     lastName: telegramUserData.last_name,
                     username: telegramUserData.username
                 })
+            } else {
+                console.warn('Не удалось получить данные пользователя из Telegram WebApp')
             }
             
             await fetchUserData()

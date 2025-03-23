@@ -14,7 +14,7 @@ api.interceptors.request.use((config) => {
     const telegramUser = WebApp.initDataUnsafe.user;
     
     if (telegramUser && telegramUser.id && config.headers) {
-        config.headers.telegram_id = telegramUser.id.toString();
+        config.headers['telegram_id'] = telegramUser.id.toString();
     }
     
     return config;
@@ -39,14 +39,14 @@ export interface BirthdayUpdateRequest {
 
 export const userApi = {
     getCurrentUser: async (): Promise<UserResponse> => {
-        const response = await api.get<UserResponse>('/user/me');
+        const response = await api.get<UserResponse>('/users/me');
         return response.data;
     },
     
     updateBirthday: async (birthday: Date): Promise<UserResponse> => {
         const formattedDate = birthday.toISOString().split('T')[0];
         
-        const response = await api.put<UserResponse>('/user/me/birthday', {
+        const response = await api.put<UserResponse>('/users/me/birthday', {
             birthday: formattedDate
         });
         
@@ -61,7 +61,9 @@ export const shareApi = {
     },
     
     createShareLink: async (): Promise<string> => {
-        const response = await api.post<{share_code: string, expires_at?: string}>('/share');
+        const response = await api.post<{share_code: string, expires_at?: string}>('/share', {
+            expires_in_hours: 24
+        });
         return response.data.share_code;
     }
 };

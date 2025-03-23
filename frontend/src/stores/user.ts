@@ -1,18 +1,7 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-
-export interface UserData {
-    telegramId?: number;
-    username?: string;
-    firstName?: string;
-    lastName?: string;
-}
-
-export interface BirthdayData {
-    day: number;
-    month: number;
-    year: number;
-}
+import { ref, computed } from 'vue'
+import type { UserData, BirthdayData, TimeUntilBirthday } from '../models'
+import { calculateAge, isValidDate } from '../models'
 
 export const useUserStore = defineStore('user', () => {
     const userData = ref<UserData>({})
@@ -26,21 +15,21 @@ export const useUserStore = defineStore('user', () => {
         birthday.value = data
         saveToLocalStorage()
     }
-
+    
     function setUserData(data: UserData) {
         userData.value = data
         saveToLocalStorage()
     }
-
+    
     function saveToLocalStorage() {
         localStorage.setItem('userData', JSON.stringify(userData.value))
         localStorage.setItem('birthday', JSON.stringify(birthday.value))
     }
-
+    
     function loadFromLocalStorage() {
         const savedUserData = localStorage.getItem('userData')
         const savedBirthday = localStorage.getItem('birthday')
-    
+        
         if (savedUserData) {
             try {
                 userData.value = JSON.parse(savedUserData)
@@ -48,7 +37,7 @@ export const useUserStore = defineStore('user', () => {
                 console.error('Error parsing user data:', e)
             }
         }
-    
+        
         if (savedBirthday) {
             try {
                 birthday.value = JSON.parse(savedBirthday)
@@ -57,30 +46,31 @@ export const useUserStore = defineStore('user', () => {
             }
         }
     }
-
-    function getTimeUntilBirthday() {
+    
+    function getTimeUntilBirthday(): TimeUntilBirthday {
         const today = new Date()
         const currentYear = today.getFullYear()
-    
+        
         const birthdayDate = new Date(
             currentYear, 
             birthday.value.month - 1, 
             birthday.value.day
         )
-    
+        
         if (birthdayDate < today) {
             birthdayDate.setFullYear(currentYear + 1)
         }
-    
+        
         const diff = birthdayDate.getTime() - today.getTime()
-    
+        
         const days = Math.floor(diff / (1000 * 60 * 60 * 24))
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-    
+        
         return { days, hours, minutes }
     }
-
+    
+    // Создать ссылку для поделиться
     function generateShareLink() {
         const base = window.location.origin
         const params = new URLSearchParams()
@@ -94,7 +84,8 @@ export const useUserStore = defineStore('user', () => {
         
         return `${base}?${params.toString()}`
     }
-
+    
+    // Загрузить данные из URL параметров
     function loadFromUrlParams() {
         const params = new URLSearchParams(window.location.search)
         
@@ -117,6 +108,16 @@ export const useUserStore = defineStore('user', () => {
             }
         }
     }
+    
+    // Вычисление возраста
+    function getAge(): number {
+        return calculateAge(birthday.value)
+    }
+    
+    // Проверка валидности даты рождения
+    function isValidBirthday(): boolean {
+        return isValidDate(birthday.value)
+    }
 
     return {
         userData,
@@ -127,6 +128,8 @@ export const useUserStore = defineStore('user', () => {
         saveToLocalStorage,
         loadFromLocalStorage,
         generateShareLink,
-        loadFromUrlParams
+        loadFromUrlParams,
+        getAge,
+        isValidBirthday
     }
 })

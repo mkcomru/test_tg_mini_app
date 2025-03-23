@@ -7,10 +7,7 @@ from backend.app.api.deps import get_current_user
 
 router = APIRouter()
 
-@router.get("/me", response_model=UserResponse)
-async def get_current_user_info(
-    user: User = Depends(get_current_user)
-) -> UserResponse:
+def create_user_response(user: User) -> UserResponse:
     response = UserResponse(
         telegram_id=user.telegram_id,
         first_name=user.first_name,
@@ -24,6 +21,12 @@ async def get_current_user_info(
     
     return response
 
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(
+    user: User = Depends(get_current_user)
+) -> UserResponse:
+    return create_user_response(user)
+
 @router.put("/me/birthday", response_model=UserResponse)
 async def update_birthday(
     birthday_data: UserBirthdayUpdate,
@@ -32,14 +35,4 @@ async def update_birthday(
     user.birthday = birthday_data.birthday
     await user.save()
     
-    response = UserResponse(
-        telegram_id=user.telegram_id,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        username=user.username,
-        birthday=user.birthday
-    )
-    
-    response.birthday_remaining = calculate_time_to_birthday(user.birthday)
-    
-    return response
+    return create_user_response(user)

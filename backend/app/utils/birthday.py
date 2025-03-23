@@ -11,8 +11,8 @@ def calculate_time_to_birthday(birthday: date) -> BirthdayRemaining:
     
     delta = datetime.combine(next_birthday, datetime.min.time()) - now
     
-    days = delta.days
-    hours = delta.seconds // 3600
-    minutes = (delta.seconds % 3600) // 60
-    
-    return BirthdayRemaining(days=days, hours=hours, minutes=minutes)
+    return BirthdayRemaining(
+        days=delta.days,
+        hours=delta.seconds // 3600,
+        minutes=(delta.seconds % 3600) // 60
+    )

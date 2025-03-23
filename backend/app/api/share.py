@@ -73,4 +73,4 @@ async def get_shared_user_data(share_code: str) -> SharedUserResponse:
     return SharedUserResponse(
         user=user_response,
         is_expired=is_expired
-    )
+    ) 

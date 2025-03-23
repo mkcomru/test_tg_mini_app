@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { UserData, BirthdayData, TimeUntilBirthday } from '../models'
 import { calculateAge, isValidDate } from '../models'
+import { userApi, shareApi } from '../api'
+import type { UserResponse } from '../api'
+import { getUserData, WebApp } from '../telegram'
 
 export const useUserStore = defineStore('user', () => {
     const userData = ref<UserData>({})
@@ -10,40 +13,98 @@ export const useUserStore = defineStore('user', () => {
         month: 1,
         year: 2000
     })
+    const isLoading = ref(false)
+    const error = ref<string | null>(null)
 
-    function setBirthday(data: BirthdayData) {
-        birthday.value = data
-        saveToLocalStorage()
+    async function setBirthday(data: BirthdayData) {
+        try {
+            isLoading.value = true
+            error.value = null
+            
+            birthday.value = data
+            
+            const birthdayDate = new Date(data.year, data.month - 1, data.day)
+            
+            const response = await userApi.updateBirthday(birthdayDate)
+            
+            updateFromServerResponse(response)
+            
+            return true
+        } catch (e) {
+            console.error('Error updating birthday:', e)
+            error.value = 'Ошибка при обновлении даты рождения'
+            return false
+        } finally {
+            isLoading.value = false
+        }
     }
     
     function setUserData(data: UserData) {
         userData.value = data
-        saveToLocalStorage()
     }
     
-    function saveToLocalStorage() {
-        localStorage.setItem('userData', JSON.stringify(userData.value))
-        localStorage.setItem('birthday', JSON.stringify(birthday.value))
+    async function fetchUserData() {
+        try {
+            isLoading.value = true
+            error.value = null
+            
+            const response = await userApi.getCurrentUser()
+            updateFromServerResponse(response)
+            
+            return true
+        } catch (e) {
+            console.error('Error fetching user data:', e)
+            error.value = 'Ошибка при получении данных пользователя'
+            return false
+        } finally {
+            isLoading.value = false
+        }
     }
     
-    function loadFromLocalStorage() {
-        const savedUserData = localStorage.getItem('userData')
-        const savedBirthday = localStorage.getItem('birthday')
-        
-        if (savedUserData) {
-            try {
-                userData.value = JSON.parse(savedUserData)
-            } catch (e) {
-                console.error('Error parsing user data:', e)
-            }
+    function updateFromServerResponse(response: UserResponse) {
+        userData.value = {
+            telegramId: response.telegram_id,
+            firstName: response.first_name,
+            lastName: response.last_name,
+            username: response.username
         }
         
-        if (savedBirthday) {
-            try {
-                birthday.value = JSON.parse(savedBirthday)
-            } catch (e) {
-                console.error('Error parsing birthday data:', e)
+        if (response.birthday) {
+            const [year, month, day] = response.birthday.split('-').map(Number)
+            birthday.value = {
+                day,
+                month,
+                year
             }
+        }
+    }
+    
+    async function loadUserData() {
+        try {
+            isLoading.value = true
+            error.value = null
+            
+            loadFromUrlParams()
+            
+            const telegramUserData = getUserData()
+            if (telegramUserData) {
+                setUserData({
+                    telegramId: telegramUserData.id,
+                    firstName: telegramUserData.first_name,
+                    lastName: telegramUserData.last_name,
+                    username: telegramUserData.username
+                })
+            }
+            
+            await fetchUserData()
+            
+            return true
+        } catch (e) {
+            console.error('Error loading user data:', e)
+            error.value = 'Ошибка при загрузке данных пользователя'
+            return false
+        } finally {
+            isLoading.value = false
         }
     }
     
@@ -70,22 +131,24 @@ export const useUserStore = defineStore('user', () => {
         return { days, hours, minutes }
     }
     
-    // Создать ссылку для поделиться
-    function generateShareLink() {
-        const base = window.location.origin
-        const params = new URLSearchParams()
-        
-        params.set('name', userData.value.firstName || '')
-        params.set('lastname', userData.value.lastName || '')
-        params.set('username', userData.value.username || '')
-        params.set('day', birthday.value.day.toString())
-        params.set('month', birthday.value.month.toString())
-        params.set('year', birthday.value.year.toString())
-        
-        return `${base}?${params.toString()}`
+    async function generateShareLink(): Promise<string> {
+        try {
+            isLoading.value = true
+            error.value = null
+            
+            const shareCode = await shareApi.createShareLink()
+            
+            const base = window.location.origin
+            return `${base}/share/${shareCode}`
+        } catch (e) {
+            console.error('Error generating share link:', e)
+            error.value = 'Ошибка при создании ссылки'
+            return ''
+        } finally {
+            isLoading.value = false
+        }
     }
     
-    // Загрузить данные из URL параметров
     function loadFromUrlParams() {
         const params = new URLSearchParams(window.location.search)
         
@@ -109,12 +172,28 @@ export const useUserStore = defineStore('user', () => {
         }
     }
     
-    // Вычисление возраста
+    async function loadByShareCode(shareCode: string) {
+        try {
+            isLoading.value = true
+            error.value = null
+            
+            const userData = await shareApi.getSharedData(shareCode)
+            updateFromServerResponse(userData)
+            
+            return true
+        } catch (e) {
+            console.error('Error loading shared data:', e)
+            error.value = 'Ошибка при загрузке данных по ссылке'
+            return false
+        } finally {
+            isLoading.value = false
+        }
+    }
+    
     function getAge(): number {
         return calculateAge(birthday.value)
     }
     
-    // Проверка валидности даты рождения
     function isValidBirthday(): boolean {
         return isValidDate(birthday.value)
     }
@@ -122,14 +201,17 @@ export const useUserStore = defineStore('user', () => {
     return {
         userData,
         birthday,
+        isLoading,
+        error,
         setBirthday,
         setUserData,
         getTimeUntilBirthday,
-        saveToLocalStorage,
-        loadFromLocalStorage,
         generateShareLink,
         loadFromUrlParams,
         getAge,
-        isValidBirthday
+        isValidBirthday,
+        fetchUserData,
+        loadUserData,
+        loadByShareCode
     }
 })

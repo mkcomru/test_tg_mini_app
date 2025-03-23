@@ -8,24 +8,14 @@
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from './stores/user';
-import { initApp, getUserData } from './telegram';
+import { initApp } from './telegram';
 
 const router = useRouter();
 const userStore = useUserStore();
 
-onMounted(() => {
-  initApp();
-  
-  const user = getUserData();
-  if (user) {
-      userStore.setUserData({
-          telegramId: user.id,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          username: user.username
-      });
-  }
-  
-  userStore.loadFromUrlParams();
+initApp();
+
+onMounted(async () => {
+  await userStore.loadUserData();
 });
 </script>

@@ -24,3 +24,22 @@ async def get_current_user_info(
     
     return response
 
+@router.put("/me/birthday", response_model=UserResponse)
+async def update_birthday(
+    birthday_data: UserBirthdayUpdate,
+    user: User = Depends(get_current_user)
+) -> UserResponse:
+    user.birthday = birthday_data.birthday
+    await user.save()
+    
+    response = UserResponse(
+        telegram_id=user.telegram_id,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        username=user.username,
+        birthday=user.birthday
+    )
+    
+    response.birthday_remaining = calculate_time_to_birthday(user.birthday)
+    
+    return response

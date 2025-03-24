@@ -6,6 +6,6 @@ def get_webapp_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(
         text="Открыть WebApp",
-        web_app=WebAppInfo(url=f"https://google.com")
+        web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}")
     )
     return builder.as_markup()

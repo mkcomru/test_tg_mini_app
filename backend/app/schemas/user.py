@@ -11,7 +11,7 @@ class UserBase(BaseModel):
 
 
 class UserBirthdayUpdate(BaseModel):
-    birthday: date = Field(..., description="Дата рождения пользователя")
+    birthday: str = Field(..., description="Дата рождения пользователя в формате YYYY-MM-DD")
 
 
 class BirthdayRemaining(BaseModel):
@@ -21,7 +21,7 @@ class BirthdayRemaining(BaseModel):
 
 
 class UserResponse(UserBase):
-    birthday: Optional[date] = Field(None, description="Дата рождения пользователя")
+    birthday: Optional[str] = Field(None, description="Дата рождения пользователя в формате YYYY-MM-DD")
     birthday_remaining: Optional[BirthdayRemaining] = Field(
         None, 
         description="Информация о том, сколько осталось до дня рождения"
